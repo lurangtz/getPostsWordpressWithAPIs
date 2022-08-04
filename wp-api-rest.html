@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WordPress REST API</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.0/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-gH2yIJqKdNHPEq0n4Mqa/HGKIhSkIHeL5AyhkYV8i59U5AR6csBvApHHNl/vI1Bx" crossorigin="anonymous">
+    <style>
+        * {position: relative; text-decoration: unset; outline: none;}
+        html, body {width: 100%; padding: 0; margin: 0; display: block; font-size: 16px;}
+        .featured-img {max-width: 100%;}
+        .title {text-transform: uppercase;}
+        .description {text-align: justify;}
+    </style>
+</head>
+<body>
+    <div class="container">
+        <section class="py-5">
+            <div class="container">
+                <div class="row">
+                    <div class="col-12 mb-4">
+                        <h1>WordPress REST API</h1>
+                    </div>
+                </div>
+                <div class="row posts">
+                    <div class="col-12">
+                        <p class="fs-1 fw-bolder text-center">
+                            Loading <img src="https://cdnjs.cloudflare.com/ajax/libs/galleriffic/2.0.1/css/loader.gif" alt="loading" width="32" height="32">
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </div>
+    <template id="crud-template">
+        <div class="col-lg-4 col-md-6 col-12 mb-4 post">
+            <img src="" alt="" class="img-fluid featured-img">
+            <h2 class="fs-4 fw-semibold text-uppercase title"></h2>
+            <p class="description"></p>
+            <a href="" target="_blank" rel="noopener noreferrer" class="btn btn-primary w-50 ms-auto me-0 mb-3 d-block url">Leer más</a>
+        </div>
+    </template>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.0/dist/js/bootstrap.bundle.min.js" integrity="sha384-A3rJD856KowSb7dwlZdYEkO39Gagi7vIsF0jrRAoQmDKKtQBHUuLZ9AsSv4jD4Xa" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+    <script>
+        const d = document,
+        $section = d.querySelector(".posts"),
+        $template = d.querySelector("#crud-template").content,
+        $fragment = d.createDocumentFragment(),
+        DOMAIN = "http://veladoraslagloria.com.mx/blog",
+        SITE = `${DOMAIN}/wp-json`,
+        API_WP = `${SITE}/wp/v2`,
+        POSTS = `${API_WP}/posts?_embed`;
+
+        // fetch API
+        const getAllPosts = async () => {
+            try {
+                let response = await fetch(POSTS),
+                json = await response.json();
+                // console.log(response)
+                if (!response.ok) throw {status: response.status, statusText: response.statusText}
+                console.log(json);
+                json.slice(0, 6).map(el => {
+                    let extract = el.excerpt.rendered.toString().replace(/(<([^>]+)>)|\n/ig, "");
+                    $template.querySelector(".featured-img").src = el._embedded["wp:featuredmedia"][0].source_url;
+                    $template.querySelector(".title").textContent = el.title.rendered;
+                    $template.querySelector(".description").textContent = extract;
+                    $template.querySelector(".url").href = el.link;
+                    let $clone = d.importNode($template, true);
+                    $fragment.appendChild($clone);
+                });
+                $section.innerHTML = '';
+                $section.appendChild($fragment);
+            } catch(error) {
+                console.error(error);
+                let message = error.statusText || "An error has occurred!";
+                $section.insertAdjacentHTML("afterend", `<p><b>Error ${error.status}: ${message}</b></p>`);
+            }
+        }
+        // d.addEventListener("DOMContentLoaded", getAllPosts)
+    
+        // axios API
+        async function getPostsAxios() {
+            try {
+                const response = await axios.get(POSTS),
+                json = await response.data;
+                console.log(json);
+                json.slice(0, 6).map(el => {
+                    let extract = el.excerpt.rendered.toString().replace(/(<([^>]+)>)|\n/ig, "").substring(0, 50) + "...";
+                    $template.querySelector(".featured-img").src = el._embedded["wp:featuredmedia"][0].source_url;
+                    $template.querySelector(".title").textContent = el.title.rendered;
+                    $template.querySelector(".description").textContent = extract;
+                    $template.querySelector(".url").href = el.link;
+                    let $clone = d.importNode($template, true);
+                    $fragment.appendChild($clone);
+                });
+                $section.innerHTML = '';
+                $section.appendChild($fragment);
+            } catch (error) {
+                console.error(error);
+                let message = error.response.statusText || "An error has occurred!";
+                $section.insertAdjacentHTML("afterend", `<p><b>Error ${error.response.status}: ${message}</b></p>`);
+            }
+        }
+        d.addEventListener("DOMContentLoaded", getPostsAxios);
+    </script>
+</body>
+</html>
